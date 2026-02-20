@@ -1,0 +1,42 @@
+{
+  "name": "rr-external-tool",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Electron-side panel and bridge for MT5 RR setup execution",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "cli": "node src/cli.js",
+    "dist:win": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.unlimited.rrtool",
+    "productName": "UnLimiteD RR Panel",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "UnLimiteD-RR-Panel-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
