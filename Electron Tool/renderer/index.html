@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>UnLimiteD Electron Panel</title>
+  <style>
+    body { margin: 0; font-family: 'Segoe UI', sans-serif; background:#14161d; color:#f4f7ff; }
+    .wrap { padding: 14px; }
+    .card { background:#1f2430; border:1px solid #3f4a61; border-radius:10px; padding:12px; margin-bottom:10px; }
+    h1 { margin:0 0 10px; font-size:18px; }
+    h2 { margin:0 0 8px; font-size:14px; color:#7cd3ff; }
+    .gold { color:#ffd17d; }
+    button { width:100%; margin:4px 0; padding:8px; border:0; border-radius:8px; color:white; background:#324056; cursor:pointer; }
+    button.ew { background:#5e4a26; }
+    .row { display:flex; gap:8px; }
+    .row button { flex:1; }
+    label { display:flex; align-items:center; gap:8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>⚡ UnLimiteD 操作パネル</h1>
+      <label><input type="checkbox" id="alwaysOnTop"> 常に最前面に表示（オプション）</label>
+    </div>
+
+    <div class="card">
+      <h2>【RRセクション】</h2>
+      <button id="rrLong">ロングポジションRR +LONG</button>
+      <button id="rrShort">ショートポジションRR +SHORT</button>
+      <div class="row">
+        <button id="rrArm">ARM</button>
+        <button id="rrExec">EXEC</button>
+        <button id="rrCancel">CANCEL</button>
+      </div>
+      <button id="rrDeleteAll" style="background:#8a1f1f;">全描画削除</button>
+    </div>
+
+    <div class="card">
+      <h2 class="gold">【エリオットセクション】</h2>
+      <button class="ew">エリオット波動推進波（12345）</button>
+      <button class="ew">エリオット波動調整波（ABC）</button>
+      <button class="ew">エリオット波動トライアングル（ABCDE）</button>
+      <button class="ew">エリオット波動ダブルコンボ（WXY）</button>
+      <button class="ew">エリオット波動トリプルコンボ（WXYXZ）</button>
+      <button class="ew" style="background:#792d2d;">戻る</button>
+    </div>
+  </div>
+
+  <script>
+    (async () => {
+      const cfg = await window.panelApi.getConfig();
+      const chk = document.getElementById('alwaysOnTop');
+      chk.checked = !!cfg.alwaysOnTop;
+      chk.addEventListener('change', async () => {
+        await window.panelApi.setAlwaysOnTop(chk.checked);
+      });
+    })();
+  </script>
+</body>
+</html>
