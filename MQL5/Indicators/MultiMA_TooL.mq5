@@ -108,6 +108,16 @@ input bool   Range_Enable          = true;       // レンジ帯表示
 input int    Range_ThresholdPoints = 150;        // 収束しきい値 (points)
 input color  Range_Color           = clrKhaki;   // レンジ帯色
 
+input group "=== PO表示トグルボタン (左下) ==="
+input bool   Btn_Show       = true;            // トグルボタンを表示
+input int    Btn_XDistance  = 10;              // 左端からのX距離 (px)
+input int    Btn_YDistance  = 15;              // 下端からのY距離 (px)
+input int    Btn_XSize      = 110;             // ボタン幅 (px)
+input int    Btn_YSize      = 24;              // ボタン高さ (px)
+input color  Btn_OnColor    = clrSeaGreen;     // ON時の背景色
+input color  Btn_OffColor   = clrFireBrick;    // OFF時の背景色
+input color  Btn_TextColor  = clrWhite;        // 文字色
+
 //+------------------------------------------------------------------+
 //| バッファ                                                          |
 //+------------------------------------------------------------------+
@@ -130,8 +140,12 @@ int    ExtOrderCount = 0;
 int    ExtMaxPeriod  = 1;
 int    ExtRatesTotal = 0;   // 最新の rates_total (OnChartEvent から参照)
 
-//--- ゾーンオブジェクト名プレフィックス
-const string ZONE_PREFIX = "MMT_ZONE_";
+//--- PO背景の表示状態 (ボタンで切替。レンジ帯は影響を受けない)
+bool   ExtShowPO = true;
+
+//--- オブジェクト名
+const string ZONE_PREFIX = "MMT_ZONE_";   // 背景ゾーン矩形
+const string BTN_NAME    = "MMT_BTN_PO";  // PO表示トグルボタン
 
 //+------------------------------------------------------------------+
 //| 配列ユーティリティ                                                |
@@ -304,7 +318,49 @@ int OnInit()
    IndicatorSetString(INDICATOR_SHORTNAME,"MultiMA_TooL");
    IndicatorSetInteger(INDICATOR_DIGITS,_Digits);
 
+//--- PO表示トグルボタン (左下) を作成
+   ExtShowPO = true;
+   CreateToggleButton();
+
    return(INIT_SUCCEEDED);
+  }
+
+//+------------------------------------------------------------------+
+//| PO表示トグルボタンを作成 (メインチャート左下)                     |
+//+------------------------------------------------------------------+
+void CreateToggleButton()
+  {
+   if(!Btn_Show)
+      return;
+   if(ObjectFind(0,BTN_NAME)<0)
+      ObjectCreate(0,BTN_NAME,OBJ_BUTTON,0,0,0);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_CORNER,CORNER_LEFT_LOWER);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_XDISTANCE,Btn_XDistance);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_YDISTANCE,Btn_YDistance);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_XSIZE,Btn_XSize);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_YSIZE,Btn_YSize);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_COLOR,Btn_TextColor);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_FONTSIZE,9);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_BORDER_COLOR,clrBlack);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_BACK,false);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_STATE,false);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_SELECTABLE,false);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_SELECTED,false);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_HIDDEN,true);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_ZORDER,0);
+   UpdateToggleButton();
+  }
+
+//+------------------------------------------------------------------+
+//| ボタンの見た目を現在の ExtShowPO に同期                            |
+//+------------------------------------------------------------------+
+void UpdateToggleButton()
+  {
+   if(ObjectFind(0,BTN_NAME)<0)
+      return;
+   ObjectSetString (0,BTN_NAME,OBJPROP_TEXT,ExtShowPO ? "PO背景: ON" : "PO背景: OFF");
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_BGCOLOR,ExtShowPO ? Btn_OnColor : Btn_OffColor);
+   ObjectSetInteger(0,BTN_NAME,OBJPROP_STATE,false); // 押下状態は使わずトグルとして扱う
   }
 
 //+------------------------------------------------------------------+
@@ -494,7 +550,9 @@ void RedrawVisibleZones()
       int j  = i;
       while(j+1<=hiBuf && BarState(j+1)==st)
          j++;
-      if(st!=0)
+      //--- PO (st=1,2) はボタンOFF時は描かない。レンジ (st=3) は常に対象
+      bool drawIt = (st!=0) && !((st==1 || st==2) && !ExtShowPO);
+      if(drawIt)
         {
          int      sLeft  = (ExtRatesTotal-1) - i;          // 区間左端の series index
          int      sRight = (ExtRatesTotal-1) - j;          // 区間右端の series index
@@ -640,7 +698,16 @@ void OnChartEvent(const int id,const long &lparam,const double &dparam,
                   const string &sparam)
   {
    if(id==CHARTEVENT_CHART_CHANGE)
+     {
       RedrawVisibleZones();
+      return;
+     }
+   if(id==CHARTEVENT_OBJECT_CLICK && sparam==BTN_NAME)
+     {
+      ExtShowPO = !ExtShowPO;   // PO背景の表示/非表示をトグル
+      UpdateToggleButton();
+      RedrawVisibleZones();
+     }
   }
 
 //+------------------------------------------------------------------+
@@ -649,6 +716,7 @@ void OnChartEvent(const int id,const long &lparam,const double &dparam,
 void OnDeinit(const int reason)
   {
    ObjectsDeleteAll(0,ZONE_PREFIX,-1,OBJ_RECTANGLE);
+   ObjectDelete(0,BTN_NAME);
    ChartRedraw();
   }
 //+------------------------------------------------------------------+
